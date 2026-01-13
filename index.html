@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Consultation Simulator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      height: 90vh;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .status-bar {
+      background: #f8f9fa;
+      padding: 12px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .badge-active {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .badge-completed {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .badge-initializing {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .reset-btn {
+      padding: 8px 16px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 15px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .reset-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+
+    .message {
+      margin-bottom: 16px;
+      display: flex;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.doctor {
+      justify-content: flex-end;
+    }
+
+    .message.patient {
+      justify-content: flex-start;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .doctor .message-content {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .patient .message-content {
+      background: white;
+      color: #333;
+      border: 1px solid #e0e0e0;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message-label {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      opacity: 0.8;
+    }
+
+    .input-area {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      gap: 12px;
+    }
+
+    #messageInput {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    #messageInput:focus {
+      border-color: #11998e;
+    }
+
+    #messageInput:disabled {
+      background: #f5f5f5;
+      cursor: not-allowed;
+    }
+
+    #sendBtn {
+      padding: 12px 28px;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    #sendBtn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+    }
+
+    #sendBtn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 15px;
+      color: #666;
+      font-style: italic;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .system-message {
+      text-align: center;
+      padding: 10px;
+      margin: 12px auto;
+      background: #fff3cd;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #856404;
+      max-width: 80%;
+      border: 1px solid #ffeaa7;
+    }
+
+    .error-message {
+      text-align: center;
+      padding: 10px;
+      margin: 12px auto;
+      background: #f8d7da;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #721c24;
+      max-width: 80%;
+      border: 1px solid #f5c6cb;
+    }
+
+    .chat-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .chat-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    .chat-container::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+
+    .chat-container::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .status-bar {
+        font-size: 11px;
+      }
+
+      .message-content {
+        max-width: 85%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Patient Consultation Simulator</h1>
+      <p>Role-playing medical consultation with AI patient</p>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-item">
+        <span>Session:</span>
+        <span class="status-badge badge-initializing" id="sessionStatus">Initializing...</span>
+      </div>
+      <div class="status-item">
+        <span>Symptoms:</span>
+        <strong id="symptomsCount">0</strong>
+      </div>
+      <div class="status-item">
+        <span>Status:</span>
+        <strong id="consultationStatus">Starting...</strong>
+      </div>
+      <button class="reset-btn" id="resetBtn" onclick="resetSession()">New Session</button>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+      <div class="loading active" id="loading">Connecting...</div>
+    </div>
+
+    <div class="input-area">
+      <input 
+        type="text" 
+        id="messageInput" 
+        placeholder="Type your message..."
+        disabled
+      />
+      <button id="sendBtn" disabled>Send</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin;
+    let sessionId = null;
+    let currentState = null;
+    
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const loading = document.getElementById('loading');
+    const sessionStatus = document.getElementById('sessionStatus');
+    const symptomsCount = document.getElementById('symptomsCount');
+    const consultationStatus = document.getElementById('consultationStatus');
+
+    function loadSession() {
+      const saved = localStorage.getItem('session');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          sessionId = data.sessionId;
+          currentState = data.state;
+          
+          if (data.state && data.state.messages) {
+            data.state.messages.forEach(msg => {
+              const role = msg.role === 'user' ? 'doctor' : 'patient';
+              addMessage(role, msg.content, false);
+            });
+          }
+          
+          updateInfo(data.patientInfo);
+          loading.classList.remove('active');
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+          sessionStatus.textContent = 'Active';
+          sessionStatus.className = 'status-badge badge-active';
+          return true;
+        } catch (e) {
+          localStorage.removeItem('session');
+        }
+      }
+      return false;
+    }
+
+    function saveSession(info) {
+      try {
+        localStorage.setItem('session', JSON.stringify({
+          sessionId: sessionId,
+          state: currentState,
+          patientInfo: info,
+          timestamp: new Date().toISOString()
+        }));
+      } catch (e) {
+        console.error('Save error:', e);
+      }
+    }
+
+    async function initSession() {
+      if (loadSession()) return;
+      
+      try {
+        const response = await fetch(API_URL + '/api/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) throw new Error('Connection failed');
+        
+        const data = await response.json();
+        sessionId = data.session_id;
+        currentState = data.state;
+        
+        loading.classList.remove('active');
+        addMessage('patient', data.message.content);
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        sessionStatus.textContent = 'Active';
+        sessionStatus.className = 'status-badge badge-active';
+        updateInfo(data.patient_info);
+        saveSession(data.patient_info);
+      } catch (error) {
+        loading.classList.remove('active');
+        addError('Connection error. Please refresh.');
+      }
+    }
+
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message || !sessionId) return;
+      
+      addMessage('doctor', message);
+      messageInput.value = '';
+      sendBtn.disabled = true;
+      messageInput.disabled = true;
+      
+      try {
+        const response = await fetch(API_URL + '/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            message: message,
+            state: currentState
+          })
+        });
+        
+        if (!response.ok) throw new Error('Request failed');
+        
+        const data = await response.json();
+        currentState = data.state;
+        
+        setTimeout(() => {
+          addMessage('patient', data.message.content);
+          updateInfo(data.patient_info);
+          saveSession(data.patient_info);
+          
+          if (data.patient_info.treatment_accepted) {
+            addSystem('Treatment accepted. Consultation complete.');
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            sessionStatus.textContent = 'Completed';
+            sessionStatus.className = 'status-badge badge-completed';
+          } else {
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+          }
+        }, 600);
+      } catch (error) {
+        addError('Message failed. Try again.');
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    function resetSession() {
+      if (confirm('Start new consultation?')) {
+        localStorage.removeItem('session');
+        sessionId = null;
+        currentState = null;
+        chatContainer.innerHTML = '';
+        loading.classList.add('active');
+        loading.textContent = 'Starting new session...';
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        symptomsCount.textContent = '0';
+        consultationStatus.textContent = 'Starting...';
+        sessionStatus.textContent = 'Initializing...';
+        sessionStatus.className = 'status-badge badge-initializing';
+        initSession();
+      }
+    }
+
+    function addMessage(role, content, scroll = true) {
+      const div = document.createElement('div');
+      div.className = 'message ' + role;
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      
+      const label = document.createElement('div');
+      label.className = 'message-label';
+      label.textContent = role === 'doctor' ? 'Doctor' : 'Patient';
+      
+      const text = document.createElement('div');
+      text.textContent = content;
+      
+      contentDiv.appendChild(label);
+      contentDiv.appendChild(text);
+      div.appendChild(contentDiv);
+      chatContainer.appendChild(div);
+      
+      if (scroll) chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function addSystem(content) {
+      const div = document.createElement('div');
+      div.className = 'system-message';
+      div.textContent = content;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function addError(content) {
+      const div = document.createElement('div');
+      div.className = 'error-message';
+      div.textContent = content;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function updateInfo(info) {
+      symptomsCount.textContent = info.symptoms_revealed;
+      consultationStatus.textContent = info.condition;
+      if (info.treatment_accepted) {
+        sessionStatus.textContent = 'Completed';
+        sessionStatus.className = 'status-badge badge-completed';
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !sendBtn.disabled) sendMessage();
+    });
+
+    window.addEventListener('load', initSession);
+  </script>
+</body>
+</html>

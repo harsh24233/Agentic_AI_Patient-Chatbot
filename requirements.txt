@@ -1,0 +1,6 @@
+flask==3.1.0
+flask-cors==5.0.0
+langchain-groq==0.3.2
+langchain-core==0.3.50
+langgraph==0.2.60
+groq==0.14.0
